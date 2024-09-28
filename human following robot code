@@ -1,0 +1,144 @@
+The provided code should work for the intended purpose, but there are a few potential issues and improvements that could be made for optimal performance and reliability. Here's a detailed breakdown of the code with some suggested improvements:
+
+### Setup Improvements
+1. *Servo Initialization*: The servo initialization could be simplified, but it works as intended.
+2. *Sensor Pin Modes*: Ensure both RIGHT and LEFT pins are set correctly as INPUT.
+
+### Loop Function Improvements
+1. *Distance Measurement Delay*: Adding a delay between pings is essential, but make sure the delay value (50 ms) is appropriate for your needs.
+2. *IR Sensor Readings*: Digital reading for analog pins might not work as expected. Consider using analogRead instead of digitalRead for IR sensors.
+3. *Motor Speed Adjustment*: Make sure the speed values are appropriate for your motors and robot weight.
+
+### Suggested Code Improvements:
+- *Use analogRead for IR sensors*: If your IR sensors provide analog values, you should use analogRead.
+- *Add Clear Comments*: Improve code readability with more comments.
+- *Ensure Proper Pin Connections*: Verify all pin connections are correctly set up on your Arduino and sensors.
+
+Here's the improved version of the code:
+
+cpp
+// Arduino Human Following Robot
+// Created By DIY Builder
+// Modified 7 Mar 2022
+// Version 1.1
+
+#include <NewPing.h>           
+#include <Servo.h>             
+#include <AFMotor.h>           
+
+#define RIGHT A2              // Right IR sensor connected to analog pin A2 of Arduino Uno:
+#define LEFT A3               // Left IR sensor connected to analog pin A3 of Arduino Uno:
+#define TRIGGER_PIN A1        // Trigger pin connected to analog pin A1 of Arduino Uno:
+#define ECHO_PIN A0           // Echo pin connected to analog pin A0 of Arduino Uno:
+#define MAX_DISTANCE 200      // Maximum ping distance:
+
+unsigned int distance = 0;    // Variable to store ultrasonic sensor distance:
+unsigned int Right_Value = 0; // Variable to store Right IR sensor value:
+unsigned int Left_Value = 0;  // Variable to store Left IR sensor value:
+
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);  // NewPing setup of pins and maximum distance:
+
+// Create motor objects
+AF_DCMotor Motor1(1, MOTOR12_1KHZ);
+AF_DCMotor Motor2(2, MOTOR12_1KHZ);
+AF_DCMotor Motor3(3, MOTOR34_1KHZ);
+AF_DCMotor Motor4(4, MOTOR34_1KHZ);
+
+Servo myservo; // Create servo object to control the servo
+int pos = 0;   // Variable to store the servo position
+
+void setup() { 
+    Serial.begin(9600);       // Initialize serial communication at 9600 bits per second
+    myservo.attach(10);       // Attach servo to pin 10 of Arduino UNO
+
+    // Sweep servo from 0 to 180 degrees and back to 90 degrees
+    for (pos = 90; pos <= 180; pos += 1) {    
+        myservo.write(pos);                  
+        delay(15);                           
+    } 
+    for (pos = 180; pos >= 0; pos -= 1) {     
+        myservo.write(pos);                  
+        delay(15);                           
+    }
+    for (pos = 0; pos <= 90; pos += 1) {       
+        myservo.write(pos);                  
+        delay(15);                           
+    }
+
+    pinMode(RIGHT, INPUT);   // Set analog pin RIGHT as an input
+    pinMode(LEFT, INPUT);    // Set analog pin LEFT as an input
+}
+
+void loop() {
+    delay(50);                        // Wait 50ms between pings
+    distance = sonar.ping_cm();       // Send ping, get distance in cm and store it in 'distance' variable
+    Serial.print("Distance: ");                   
+    Serial.println(distance);         // Print the distance in serial monitor
+
+    // Read the value from IR sensors
+    Right_Value = analogRead(RIGHT);  
+    Left_Value = analogRead(LEFT);    
+    
+    Serial.print("RIGHT: ");                      
+    Serial.println(Right_Value);      // Print the right IR sensor value in serial monitor
+    Serial.print("LEFT: ");                       
+    Serial.println(Left_Value);       // Print the left IR sensor value in serial monitor
+
+    // Determine the robot's movement based on sensor readings
+    if ((distance > 1) && (distance < 15)) {   
+        // Move Forward
+        Motor1.setSpeed(130);  
+        Motor1.run(FORWARD);   
+        Motor2.setSpeed(130);  
+        Motor2.run(FORWARD);   
+        Motor3.setSpeed(130);  
+        Motor3.run(FORWARD);   
+        Motor4.setSpeed(130);  
+        Motor4.run(FORWARD);
+    } else if ((Right_Value < 512) && (Left_Value > 512)) { 
+        // Turn Left                                                
+        Motor1.setSpeed(150);  
+        Motor1.run(FORWARD);   
+        Motor2.setSpeed(150);  
+        Motor2.run(FORWARD);   
+        Motor3.setSpeed(150);  
+        Motor3.run(BACKWARD);  
+        Motor4.setSpeed(150);  
+        Motor4.run(BACKWARD);  
+        delay(150);
+    } else if ((Right_Value > 512) && (Left_Value < 512)) {     
+        // Turn Right
+        Motor1.setSpeed(150);  
+        Motor1.run(BACKWARD);  
+        Motor2.setSpeed(150);  
+        Motor2.run(BACKWARD);  
+        Motor3.setSpeed(150);  
+        Motor3.run(FORWARD);   
+        Motor4.setSpeed(150);  
+        Motor4.run(FORWARD);   
+        delay(150);
+    } else if (distance > 15) {  
+        // Stop
+        Motor1.setSpeed(0);    
+        Motor1.run(RELEASE);   
+        Motor2.setSpeed(0);    
+        Motor2.run(RELEASE);   
+        Motor3.setSpeed(0);    
+        Motor3.run(RELEASE);   
+        Motor4.setSpeed(0);    
+        Motor4.run(RELEASE);   
+    }
+}
+
+
+### Key Changes:
+1. *Servo Initialization*: Kept as is since it works correctly.
+2. *Use analogRead for IR sensors*: Assumes IR sensors give analog values; adjust thresholds accordingly.
+3. *Added more descriptive comments*: For clarity and readability.
+
+### Testing and Debugging:
+- *Check sensor connections and values*: Ensure the IR sensors are connected correctly and providing accurate readings.
+- *Adjust motor speeds*: If the robot's movement is not as expected, try adjusting the motor speeds.
+- *Monitor Serial Output*: Use the serial monitor to debug sensor values and distances.
+
+With these improvements and proper setup, the code should work as intended, making the robot follow a human or avoid obstacles.
